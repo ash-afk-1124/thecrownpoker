@@ -1,0 +1,16 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# One Docker web service. Rooms live in memory, so keep exactly one instance.
+services:
+  - type: web
+    name: holdem-poker
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    numInstances: 1
+    envVars:
+      - key: PUBLIC_URL
+        sync: false # set in the dashboard, e.g. https://poker.example.com
+      - key: TURN_SECONDS
+        value: "30"
+      - key: NEXT_HAND_SECONDS
+        value: "6"
