@@ -26,7 +26,7 @@ export function breakIntoChips(amount: number): { value: number; className: stri
 
 interface Props {
   amount: number;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   /** Maximum chips drawn per column (the label always shows the exact amount). */
   maxPerColumn?: number;
   maxColumns?: number;
@@ -52,10 +52,4 @@ export function ChipStack({ amount, size = 'md', maxPerColumn = 8, maxColumns = 
       {label && <span className="chip-label">{formatGBP(amount)}</span>}
     </div>
   );
-}
-
-/** A single decorative chip, e.g. next to a stack size. */
-export function ChipIcon({ denomination = 100 }: { denomination?: number }) {
-  const d = DENOMINATIONS.find((x) => x.value === denomination) ?? DENOMINATIONS[2];
-  return <span className={`chip chip-icon-single ${d.className}`} aria-hidden />;
 }

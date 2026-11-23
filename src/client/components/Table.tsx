@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { formatGBP, type PlayerView, type PublicPlayer } from '../../engine';
 import { EmptyCardSlot, PlayingCard } from './Card';
-import { ChipIcon, ChipStack } from './Chips';
+import { ChipStack } from './Chips';
 
 export interface SeatExtra {
   subtitle?: string;
@@ -20,10 +20,24 @@ interface Props {
 function seatPosition(index: number, count: number) {
   // index 0 is the viewer at the bottom; others go clockwise around the oval.
   const angle = Math.PI / 2 + (index * 2 * Math.PI) / count;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const x = 50 + 47 * cos;
+  const y = 50 + 50 * sin;
+  // Seats straight above or below the centre would put their bet on the pot, so those
+  // bets sit beside the seat's cards instead.
+  const sideways = Math.abs(cos) < 0.2 ? 1 : 0;
   return {
-    seat: { left: `${50 + 47 * Math.cos(angle)}%`, top: `${50 + 50 * Math.sin(angle)}%` },
-    // Bet distance from the centre is set in CSS (--bet-rx / --bet-ry) so phones can pull it in.
-    bet: { ['--cos' as string]: Math.cos(angle).toFixed(4), ['--sin' as string]: Math.sin(angle).toFixed(4) } as React.CSSProperties,
+    seat: { left: `${x}%`, top: `${y}%` },
+    // Each bet sits the same fixed distance in from its seat, towards the centre.
+    // The distances are CSS variables (--bet-dx / --bet-dy) so smaller screens can shrink them.
+    bet: {
+      ['--sx' as string]: `${x}%`,
+      ['--sy' as string]: `${y}%`,
+      ['--cos' as string]: cos.toFixed(4),
+      ['--sin' as string]: sin.toFixed(4),
+      ['--side' as string]: sideways,
+    } as React.CSSProperties,
   };
 }
 
@@ -155,7 +169,10 @@ function Seat({ player: p, view, isMe, isWinner, highlightCards, extra, style, t
           <span className="seat-name-text">{p.name}{isMe && p.name.toLowerCase() !== 'you' ? ' (you)' : ''}</span>
           {extra?.offline && <span className="offline-dot" title="Disconnected">●</span>}
         </div>
-        <div className="seat-stack"><ChipIcon denomination={p.stack >= 1000 ? 1000 : p.stack >= 100 ? 100 : 5} />{formatGBP(p.stack)}</div>
+        <div className="seat-stack">
+          {p.stack > 0 && <ChipStack amount={p.stack} size="xs" label={false} maxPerColumn={5} maxColumns={4} className="bank-chips" />}
+          <span>{formatGBP(p.stack)}</span>
+        </div>
         {extra?.subtitle && <div className="seat-sub">{extra.subtitle}</div>}
         {status ? (
           <div className="seat-status">{status}</div>
@@ -166,6 +183,12 @@ function Seat({ player: p, view, isMe, isWinner, highlightCards, extra, style, t
         ) : null}
         {isTurn && turnEndsAt ? <TurnTimer endsAt={turnEndsAt} seconds={turnSeconds} /> : null}
       </div>
+      {/* On phones the bet sits under its seat instead of out on the felt. */}
+      {p.streetBet > 0 && view.phase === 'betting' && (
+        <div className="seat-bet">
+          <ChipStack amount={p.streetBet} size="sm" maxPerColumn={3} maxColumns={1} />
+        </div>
+      )}
     </div>
   );
 }
