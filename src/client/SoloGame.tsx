@@ -13,7 +13,7 @@ const HUMAN_ID = 'you';
 const BOTS = [
   { id: 'bot-rosa', name: 'Rosa', profile: BOT_PROFILES.rock },
   { id: 'bot-theo', name: 'Theo', profile: BOT_PROFILES.station },
-  { id: 'bot-priya', name: 'Priya', profile: BOT_PROFILES.shark },
+  { id: 'bot-esther', name: 'Esther', profile: BOT_PROFILES.shark },
   { id: 'bot-jack', name: 'Jack', profile: BOT_PROFILES.maniac },
 ];
 

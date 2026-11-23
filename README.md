@@ -146,7 +146,7 @@ The engine is a set of pure functions: `createGame`, `startHand`, `getLegalActio
 |---|---|
 | Rosa | Tight-passive |
 | Theo | Loose-passive (calls a lot) |
-| Priya | Tight-aggressive |
+| Esther | Tight-aggressive |
 | Jack | Loose-aggressive |
 
 Each bot receives only `getPlayerView(state, botId)`: its own cards, the board, the pot, stacks and the action log. From that it estimates equity by simulation against random hands. It also weighs pot odds and how many bets and raises have happened this street and hand.
