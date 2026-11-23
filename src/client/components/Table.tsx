@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { formatGBP, type PlayerView, type PublicPlayer } from '../../engine';
 import { EmptyCardSlot, PlayingCard } from './Card';
+import { ChipIcon, ChipStack } from './Chips';
 
 export interface SeatExtra {
   subtitle?: string;
@@ -21,7 +22,8 @@ function seatPosition(index: number, count: number) {
   const angle = Math.PI / 2 + (index * 2 * Math.PI) / count;
   return {
     seat: { left: `${50 + 47 * Math.cos(angle)}%`, top: `${50 + 50 * Math.sin(angle)}%` },
-    bet: { left: `${50 + 30 * Math.cos(angle)}%`, top: `${50 + 27 * Math.sin(angle)}%` },
+    // Bet distance from the centre is set in CSS (--bet-rx / --bet-ry) so phones can pull it in.
+    bet: { ['--cos' as string]: Math.cos(angle).toFixed(4), ['--sin' as string]: Math.sin(angle).toFixed(4) } as React.CSSProperties,
   };
 }
 
@@ -69,9 +71,8 @@ export function Table({ view, meId, extras = {}, turnEndsAt, turnSeconds = 30 }:
                 turnSeconds={turnSeconds}
               />
               {p.streetBet > 0 && view.phase === 'betting' && (
-                <div className="bet-chip" style={pos.bet}>
-                  <span className="chip-icon" aria-hidden />
-                  {formatGBP(p.streetBet)}
+                <div className="bet-chip" style={pos.bet} key={`${view.handNumber}-${view.street}-${p.streetBet}`}>
+                  <ChipStack amount={p.streetBet} size="sm" maxPerColumn={6} maxColumns={3} />
                 </div>
               )}
             </div>
@@ -96,8 +97,10 @@ function PotDisplay({ view }: { view: PlayerView }) {
       </div>
     );
   }
+  const gathered = view.pots.reduce((sum, p) => sum + p.amount, 0);
   return (
     <div className="pot-display">
+      {gathered > 0 && <ChipStack amount={gathered} size="md" label={false} maxPerColumn={10} maxColumns={5} className="pot-chips" />}
       <div className="pot-total">Pot {formatGBP(view.potTotal)}</div>
       {view.pots.length > 1 && (
         <div className="pot-breakdown">
@@ -152,7 +155,7 @@ function Seat({ player: p, view, isMe, isWinner, highlightCards, extra, style, t
           <span className="seat-name-text">{p.name}{isMe && p.name.toLowerCase() !== 'you' ? ' (you)' : ''}</span>
           {extra?.offline && <span className="offline-dot" title="Disconnected">●</span>}
         </div>
-        <div className="seat-stack">{formatGBP(p.stack)}</div>
+        <div className="seat-stack"><ChipIcon denomination={p.stack >= 1000 ? 1000 : p.stack >= 100 ? 100 : 5} />{formatGBP(p.stack)}</div>
         {extra?.subtitle && <div className="seat-sub">{extra.subtitle}</div>}
         {status ? (
           <div className="seat-status">{status}</div>

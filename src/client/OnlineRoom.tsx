@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Action, formatGBP } from '../engine';
 import { type JoinSuccess, type RoomSnapshot, MIN_ROOM_PLAYERS } from '../shared/protocol';
 import { ActionBar } from './components/ActionBar';
-import { HandHistory } from './components/HandHistory';
+import { HandHistory, HistoryButton, useHistoryDrawer } from './components/HandHistory';
 import { ResultPanel } from './components/ResultPanel';
 import { Table, type SeatExtra } from './components/Table';
 import { navigate } from './router';
@@ -22,6 +22,7 @@ export function OnlineRoom({ code }: { code: string }) {
   const [savedSeat, setSavedSeat] = useState<StoredSeat | null>(null);
   const [pending, setPending] = useState(false);
   const seatRef = useRef<StoredSeat | null>(null);
+  const drawer = useHistoryDrawer();
 
   const joinWith = useCallback(async (payload: { name?: string; token?: string }) => {
     setError(null);
@@ -167,6 +168,9 @@ export function OnlineRoom({ code }: { code: string }) {
         </div>
         <div className="topbar-right">
           {snap.game && <span className="muted small">Blinds £5/£10 · Table {formatGBP(snap.game.totalChips)}</span>}
+          {snap.game && snap.phase !== 'lobby' && (
+            <HistoryButton open={drawer.open} onClick={drawer.toggle} count={snap.game.history.length} />
+          )}
           <InviteButton url={snap.inviteUrl} compact />
         </div>
       </header>
@@ -176,7 +180,16 @@ export function OnlineRoom({ code }: { code: string }) {
       {snap.phase === 'lobby' ? (
         <Lobby snap={snap} onStart={() => simple('room:start')} onLeave={leave} error={error} />
       ) : (
-        <OnlineTable snap={snap} clockOffset={clockOffset} onAction={act} pending={pending} error={error} onBackToLobby={() => simple('room:backToLobby')} />
+        <OnlineTable
+          snap={snap}
+          clockOffset={clockOffset}
+          onAction={act}
+          pending={pending}
+          error={error}
+          onBackToLobby={() => simple('room:backToLobby')}
+          historyOpen={drawer.open}
+          onCloseHistory={() => drawer.setOpen(false)}
+        />
       )}
     </div>
   );
@@ -261,13 +274,15 @@ function Lobby({ snap, onStart, onLeave, error }: { snap: RoomSnapshot; onStart:
   );
 }
 
-function OnlineTable({ snap, clockOffset, onAction, pending, error, onBackToLobby }: {
+function OnlineTable({ snap, clockOffset, onAction, pending, error, onBackToLobby, historyOpen, onCloseHistory }: {
   snap: RoomSnapshot;
   clockOffset: number;
   onAction: (a: Action) => void;
   pending: boolean;
   error: string | null;
   onBackToLobby: () => void;
+  historyOpen: boolean;
+  onCloseHistory: () => void;
 }) {
   const view = snap.game!;
   const meId = snap.you.seated ? snap.you.playerId : null;
@@ -276,6 +291,7 @@ function OnlineTable({ snap, clockOffset, onAction, pending, error, onBackToLobb
   );
   const turnEndsAt = snap.turnEndsAt ? snap.turnEndsAt - clockOffset : null;
   const toActName = view.players.find((p) => p.id === view.toActId)?.name;
+  const me = snap.you.seated ? { id: snap.you.playerId, name: snap.you.name } : null;
 
   return (
     <div className="game-layout">
@@ -294,7 +310,7 @@ function OnlineTable({ snap, clockOffset, onAction, pending, error, onBackToLobb
             <div className="waiting">Waiting for {toActName ?? '…'}</div>
           ) : null}
           {error && <div className="error">{error}</div>}
-          <ResultPanel view={view} footer={<NextHandCountdown at={snap.nextHandAt ? snap.nextHandAt - clockOffset : null} />}>
+          <ResultPanel view={view} me={me} footer={<NextHandCountdown at={snap.nextHandAt ? snap.nextHandAt - clockOffset : null} />}>
             {snap.phase === 'finished' && (
               snap.you.isHost
                 ? <button className="btn btn-primary" onClick={onBackToLobby}>Back to Lobby for a New Match</button>
@@ -303,7 +319,7 @@ function OnlineTable({ snap, clockOffset, onAction, pending, error, onBackToLobb
           </ResultPanel>
         </div>
       </main>
-      <HandHistory history={view.history} log={view.log} />
+      <HandHistory open={historyOpen} onClose={onCloseHistory} history={view.history} log={view.log} me={me} />
     </div>
   );
 }

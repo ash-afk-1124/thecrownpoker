@@ -4,7 +4,7 @@ import {
   getPlayerView, IllegalActionError, startHand,
 } from '../engine';
 import { ActionBar } from './components/ActionBar';
-import { HandHistory } from './components/HandHistory';
+import { HandHistory, HistoryButton, useHistoryDrawer } from './components/HandHistory';
 import { ResultPanel } from './components/ResultPanel';
 import { Table, type SeatExtra } from './components/Table';
 import { navigate } from './router';
@@ -33,6 +33,8 @@ export function SoloGame() {
   const [game, setGame] = useState<GameState>(() => newSoloGame(humanName));
   const [error, setError] = useState<string | null>(null);
   const [fast, setFast] = useState(false);
+  const drawer = useHistoryDrawer();
+  const me = { id: HUMAN_ID, name: game.players[0].name };
 
   const view = useMemo(() => getPlayerView(game, HUMAN_ID, 100), [game]);
   const toAct = game.phase === 'betting' && game.toAct !== null ? game.players[game.toAct] : null;
@@ -81,6 +83,7 @@ export function SoloGame() {
           <label className="small toggle">
             <input type="checkbox" checked={fast} onChange={(e) => setFast(e.target.checked)} /> Fast bots
           </label>
+          <HistoryButton open={drawer.open} onClick={drawer.toggle} count={game.history.length} />
           <button className="btn btn-sm" onClick={newGame}>New Game</button>
         </div>
       </header>
@@ -99,7 +102,7 @@ export function SoloGame() {
             ) : null}
             {error && <div className="error">{error}</div>}
 
-            <ResultPanel view={view}>
+            <ResultPanel view={view} me={me}>
               {game.phase === 'gameOver' ? (
                 <button className="btn btn-primary" onClick={newGame}>New Game</button>
               ) : (
@@ -108,7 +111,7 @@ export function SoloGame() {
             </ResultPanel>
           </div>
         </main>
-        <HandHistory history={view.history} log={view.log} />
+        <HandHistory open={drawer.open} onClose={() => drawer.setOpen(false)} history={view.history} log={view.log} me={me} />
       </div>
     </div>
   );
